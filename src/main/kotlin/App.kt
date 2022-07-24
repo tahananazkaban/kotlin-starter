@@ -5,6 +5,12 @@ import kotlin.math.*
 //import kotlin.math.cos as cosinus
 //import kotlin.math.sqrt as akar
 
+// Coroutines
+import kotlinx.coroutines.*
+import kotlin.system.measureTimeMillis
+// Channel
+import kotlinx.coroutines.channels.Channel
+
 // Delegate Property
 class DelegateName{
     private var value: String = "Default"
@@ -35,7 +41,7 @@ class Bicycle{
     var name: String by DelegateName()
 }
 
-class Motorcycle{
+class Motor{
     var name: String by DelegateName()
 }
 
@@ -207,8 +213,31 @@ class Bird(override val numOfWings: Int) : IFly {
     }
 }
 
-fun main(){
+// Coroutines
+suspend fun getCapital() : Int {
+    delay(1000L)
+    return 50000
+}
+
+suspend fun getIncome(): Int {
+    delay(1000L)
+    return 75000
+}
+
+@InternalCoroutinesApi
+fun main (){
     println("Test")
+    for (i in 1..3){
+        for (j in 1..i){
+            print(j)
+        }
+    }
+    println()
+    val x12 = 11
+    when (x12) {
+        10, 11 -> print("a")
+        11, 12 -> print("b")
+    }
     val someString = "This is Kuple!"
     println(someString.reversed())
     println(someString.toUpperCase())
@@ -231,7 +260,7 @@ fun main(){
     var bicycle1 = Bicycle()
     bicycle1.name = "BMX Wimcycle"
 
-    var motorcycle1 = Motorcycle()
+    var motorcycle1 = Motor()
     motorcycle1.name = "Honda C70"
 
     var car1 = Car()
@@ -329,10 +358,101 @@ fun main(){
     println("Cos 120: ${cos(120.0)}")
     println("Sqrt 27: ${sqrt(27.0)}")
 
+    println()
+    println()
 
+    // Coroutines
+    runBlocking {
+//        launch(Dispatcher.IO)
+//        launch(Dispatcher.Unconfined)
+        launch(Dispatchers.Default){
+            delay(1000L)
+            print("this is from coroutine\n")
+        }
+        print("Hello ")
+        delay(2000L)
+    }
 
+    println()
+    println()
 
+    runBlocking {
+        val timeOne = measureTimeMillis {
+            val capital = getCapital()
+            val income = getIncome()
+            println("Your profit is ${income - capital}")
+        }
+        val timeTwo = measureTimeMillis {
+            val capital = async { getCapital() }
+            val income = async { getIncome() }
+            println("Your profit is ${income.await() - capital.await()}")
+        }
+        println("Completed in $timeOne ms vs $timeTwo ms")
+    }
 
+    // Job
+    runBlocking {
+        val job = launch(start = CoroutineStart.LAZY){
+            delay(5000L)
+            println("Start new Job!")
+        }
+        delay(2000L)
+//        job.start() // start job without having to wait for the job to finish
+        // job.join() // delay until the job is finished
+        job.cancel(cause = CancellationException("Time is up!"))
+        println("Cancelling job...")
+//        println("Other task")
+        if (job.isCancelled){
+            println("Job is cancelled because = ${job.getCancellationException().message}")
+        }
+    }
 
+    // Job.2
+//    runBlocking {
+//        val job = Job()
+//    }
+    println()
+    println()
+
+    runBlocking<Unit>{
+        launch(Dispatchers.Unconfined){
+            println("Starting in ${Thread.currentThread().name}")
+            delay(1000)
+            println("Resuming in ${Thread.currentThread().name}")
+        }.start()
+    }
+
+    // Single Thread Context
+    runBlocking<Unit>{
+        val dispatcher = newSingleThreadContext("myThread")
+        launch(dispatcher){
+            println("Starting in ${Thread.currentThread().name}")
+            delay(1000)
+            println("Resuming in ${Thread.currentThread().name}")
+        }.start()
+    }
+
+    runBlocking<Unit>{
+        val dispatcher = newFixedThreadPoolContext(3, "myPool")
+        launch(dispatcher){
+            println("Starting in ${Thread.currentThread().name}")
+            delay(1000)
+            println("Resuming in ${Thread.currentThread().name}")
+        }.start()
+    }
+
+    println()
+    println()
+
+    runBlocking(CoroutineName("main")){
+        val channel = Channel<Int>()
+        launch(CoroutineName("v1coroutine")){
+            println("sending from ${Thread.currentThread().name}")
+            for (x in 1..5) channel.send( x * x )
+        }
+        repeat(5) { println(channel.receive()) }
+        println("received in ${Thread.currentThread().name}")
+    }
 
 }
+
