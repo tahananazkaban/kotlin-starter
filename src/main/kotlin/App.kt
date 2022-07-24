@@ -278,8 +278,8 @@ fun main (){
     animal2.weight = 6.2
     animal2.age = 1
 //
-//    val animal3 = AnimalDelegate()
-//    animal3.name = "Hiyosi"
+    val animal3 = AnimalDelegate()
+    animal3.name = "Hiyosi"
 
     println("Animal2 name = ${animal2.name}")
     println("Animal2 weight = ${animal2.weight}")
